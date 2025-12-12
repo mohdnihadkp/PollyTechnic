@@ -1115,7 +1115,7 @@ function App() {
                  <div className="text-xs font-semibold text-slate-500 dark:text-neutral-500">
                    <p>© 2025 POLLYTECHNIC. All rights reserved.</p>
                    <p className="mt-1">
-                     Designed by <a href="https://mohdnihadkp.netfly.app" target="_blank" rel="noopener noreferrer" className="hover:text-sky-500 transition-colors">mohdnihadkp</a>
+                     Designed by <a href="https://mohdnihadkp.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-sky-500 transition-colors">mohdnihadkp</a>
                    </p>
                  </div>
             </div>
