@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- Primary SEO Meta Tags -->
+  <title>POLLYTECHNIC - Ultimate Study Companion for Diploma Students</title>
+  <meta name="title" content="POLLYTECHNIC - Ultimate Study Companion for Diploma Students">
+  <meta name="description"
+    content="Free premium study materials, video lectures, notes, and AI tutoring for Polytechnic students. Covers Computer, Mechanical, Civil, Electronics, Electrical, and Biomedical engineering departments. Ace your diploma exams with POLLYTECHNIC.">
+  <meta name="keywords"
+    content="Polytechnic, Diploma, Study Materials, Engineering Notes, Video Lectures, AI Tutor, Technical Education, Exam Preparation, Computer Engineering, Civil Engineering, Mechanical Engineering, Electronics, Electrical Engineering, Biomedical Engineering, Polytechnic Syllabus, Previous Question Papers">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  <meta name="author" content="POLLYTECHNIC">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pollytechnic.app/">
+  <meta property="og:title" content="POLLYTECHNIC - Your Study Companion">
+  <meta property="og:description"
+    content="Access curated study materials, HD video lectures, and an expert AI Tutor for all Polytechnic departments. Simplifies learning for diploma students.">
+  <meta property="og:image"
+    content="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://pollytechnic.app/">
+  <meta property="twitter:title" content="POLLYTECHNIC - Ultimate Study Companion">
+  <meta property="twitter:description"
+    content="Free premium study materials, video lectures, and AI tutoring for Polytechnic students. Ace your exams today.">
+  <meta property="twitter:image"
+    content="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://pollytechnic.app/" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'/></svg>">
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HXZDNBFKGC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-HXZDNBFKGC');
+  </script>
+
+  <!-- Google AdSense Script -->
+  <!-- Publisher ID: pub-1906693882573415, Customer ID: 8643247461 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1906693882573415"
+    crossorigin="anonymous"></script>
+
+  <!-- Structured Data for SEO (JSON-LD) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "POLLYTECHNIC",
+      "url": "https://pollytechnic.app/",
+      "description": "Comprehensive study resources, video lectures, and AI tutoring for Polytechnic students.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://pollytechnic.app/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "POLLYTECHNIC",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'/></svg>"
+        }
+      }
+    }
+    </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            // Custom "True Dark" Palette
+            poly: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+              950: '#042f2e',
+            },
+            // Overwrite default grays to be neutral/zinc for a "blacker" feel
+            slate: {
+              800: '#27272a',
+              900: '#18181b', // Zinc 900
+              950: '#09090b', // Zinc 950 (Rich Black)
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(30px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            }
+          },
+        },
+      },
+    }
+  </script>
+
+
+</head>
+
+<body
+  class="text-slate-900 dark:text-neutral-200 antialiased overflow-x-hidden selection:bg-white selection:text-black">
+  <div class="bg-mesh"></div>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
