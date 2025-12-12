@@ -66,16 +66,18 @@ function App() {
   const parallaxRef3 = useRef<HTMLDivElement>(null);
 
   // --- HISTORY MANAGEMENT ---
-  useEffect(() => {
-    // Initialize history state if null
-    if (!window.history.state) {
-      window.history.replaceState({ view: 'home' }, '');
-    }
 
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      
-      // Close all overlays by default on back
+  // Helper to push history while MERGING with current state for modals/overlays
+  const pushHistory = (newState: any, replace = false) => {
+    if (replace) {
+      window.history.replaceState(newState, '');
+    } else {
+      window.history.pushState(newState, '');
+    }
+  };
+
+  const restoreView = (state: any) => {
+      // Close all overlays by default
       setPlayingVideo(null);
       setViewingResource(null);
       setIsDriveModalOpen(false);
@@ -91,10 +93,8 @@ function App() {
         setSelectedSubject(null);
         setSelectedCategory(null);
         setIsBookmarksView(false);
-        return;
       }
-
-      if (state.view === 'bookmarks') {
+      else if (state.view === 'bookmarks') {
         setIsBookmarksView(true);
         setSelectedDept(null);
         setSelectedSemester(null);
@@ -133,30 +133,43 @@ function App() {
           setIsBookmarksView(false);
         }
       }
-      // Note: Overlays (Video/PDF/Modals) rely on the state *beneath* them being restored 
-      // via the logic above if we popped from an overlay state to a view state.
-      // If we popped *into* an overlay state (forward), we'd need more logic, 
-      // but standard browser 'Back' flow is handled by resetting overlays.
+
+      // Restore Overlays if present in state (Supports reload/forward navigation)
+      if (state?.modal === 'contact') setIsContactModalOpen(true);
+      if (state?.modal === 'scholarship') setIsScholarshipModalOpen(true);
+      if (state?.modal === 'sync') setIsSyncModalOpen(true);
+      if (state?.modal === 'drive') setIsDriveModalOpen(true);
       
-      // Special case: Restore overlays if the popped state *is* an overlay state
-      if (state.view === 'video' || state.view === 'pdf' || state.modal) {
-          // This allows "Forward" navigation to restore the overlay
-          // For simplicty in this version, we assume popping back closes overlays.
-          // To support Forward, we'd re-open based on state params.
-          if (state.modal === 'contact') setIsContactModalOpen(true);
-          if (state.modal === 'scholarship') setIsScholarshipModalOpen(true);
-          if (state.modal === 'sync') setIsSyncModalOpen(true);
+      // For Video/PDF, we need the ID to restore
+      if (state?.view === 'video' && state.videoId) {
+         // This is a simplified restore; assumes data is available in DEPARTMENTS
+         // In a real app, you might need to fetch the video details. 
+         // For now, we rely on the video list in current dept.
+         const dept = DEPARTMENTS.find(d => d.id === state.deptId); // Ideally should store video info
+         const vid = dept?.videos.find(v => v.id === state.videoId);
+         if (vid) setPlayingVideo(vid);
       }
+      if (state?.view === 'pdf' && state.resourceId) {
+         // Complex to restore without full resource object, skipping auto-restore for PDF on hard reload for simplicity
+      }
+  };
+
+  useEffect(() => {
+    // 1. Initialize history or restore state on mount (Fixes reload issue)
+    if (!window.history.state) {
+      window.history.replaceState({ view: 'home' }, '');
+    } else {
+      restoreView(window.history.state);
+    }
+
+    // 2. Handle Browser Back/Forward
+    const handlePopState = (event: PopStateEvent) => {
+      restoreView(event.state);
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-
-  // Helper to push history
-  const pushHistory = (state: any) => {
-    window.history.pushState(state, '');
-  };
 
   useEffect(() => {
     const savedProgress = localStorage.getItem('pollytechnic_progress');
@@ -400,20 +413,25 @@ function App() {
       const relatedSubject = dept.subjects.find(s => s.id === video.subjectId);
       
       // Setup state for video playback
+      const baseState = relatedSubject 
+        ? { view: 'sub', deptId: dept.id, semId: video.semester, subId: relatedSubject.id }
+        : { view: 'sem', deptId: dept.id, semId: video.semester };
+      
+      pushHistory(baseState);
+      // Then push video state
+      setTimeout(() => {
+          handlePlayVideo(video);
+      }, 0);
+
+      setSelectedDept(dept);
+      setSelectedSemester(video.semester);
       if (relatedSubject) {
-          pushHistory({ view: 'sub', deptId: dept.id, semId: video.semester, subId: relatedSubject.id });
           setSelectedSubject(relatedSubject);
           setSubjectTab('videos');
       } else {
-          pushHistory({ view: 'sem', deptId: dept.id, semId: video.semester });
           setSelectedSubject(null);
       }
-      setSelectedDept(dept);
-      setSelectedSemester(video.semester);
       setSelectedCategory(null);
-      
-      // Open video immediately
-      setTimeout(() => handlePlayVideo(video), 50);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -451,7 +469,6 @@ function App() {
       window.open(category.url, '_blank');
       return;
     }
-    // Categories act as local filters in this UI, but we could push state if we wanted
     setSelectedCategory(category);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -481,7 +498,8 @@ function App() {
   const goBackToCategories = () => setSelectedCategory(null); // Local UI state
 
   const handleViewResource = (resource: Resource) => {
-    pushHistory({ view: 'pdf', resourceId: resource.id });
+    const currentState = window.history.state || { view: 'home' };
+    pushHistory({ ...currentState, view: 'pdf', resourceId: resource.id });
     setViewingResource(resource);
   };
 
@@ -489,15 +507,17 @@ function App() {
   const handleCloseViewer = () => window.history.back();
 
   const handlePlayVideo = (video: VideoLecture) => {
-    pushHistory({ view: 'video', videoId: video.id });
+    const currentState = window.history.state || { view: 'home' };
+    pushHistory({ ...currentState, view: 'video', videoId: video.id });
     setPlayingVideo(video);
   };
 
   const handleCloseVideo = () => window.history.back();
 
-  // Modals with History Support
+  // Modals with History Support (Merge State to keep background)
   const openModal = (modalName: string, setter: (val: boolean) => void) => {
-      pushHistory({ modal: modalName });
+      const currentState = window.history.state || { view: 'home' };
+      pushHistory({ ...currentState, modal: modalName });
       setter(true);
   };
   
