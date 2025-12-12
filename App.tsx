@@ -65,6 +65,99 @@ function App() {
   const parallaxRef2 = useRef<HTMLDivElement>(null);
   const parallaxRef3 = useRef<HTMLDivElement>(null);
 
+  // --- HISTORY MANAGEMENT ---
+  useEffect(() => {
+    // Initialize history state if null
+    if (!window.history.state) {
+      window.history.replaceState({ view: 'home' }, '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      
+      // Close all overlays by default on back
+      setPlayingVideo(null);
+      setViewingResource(null);
+      setIsDriveModalOpen(false);
+      setIsSyncModalOpen(false);
+      setIsScholarshipModalOpen(false);
+      setIsContactModalOpen(false);
+      setSearchQuery('');
+      setSearchResults([]);
+
+      if (!state || state.view === 'home') {
+        setSelectedDept(null);
+        setSelectedSemester(null);
+        setSelectedSubject(null);
+        setSelectedCategory(null);
+        setIsBookmarksView(false);
+        return;
+      }
+
+      if (state.view === 'bookmarks') {
+        setIsBookmarksView(true);
+        setSelectedDept(null);
+        setSelectedSemester(null);
+        setSelectedSubject(null);
+        setSelectedCategory(null);
+      } 
+      else if (state.view === 'dept') {
+        const dept = DEPARTMENTS.find(d => d.id === state.deptId);
+        if (dept) {
+          setSelectedDept(dept);
+          setSelectedSemester(null);
+          setSelectedSubject(null);
+          setSelectedCategory(null);
+          setIsBookmarksView(false);
+        }
+      }
+      else if (state.view === 'sem') {
+        const dept = DEPARTMENTS.find(d => d.id === state.deptId);
+        if (dept) {
+          setSelectedDept(dept);
+          setSelectedSemester(state.semId);
+          setSelectedSubject(null);
+          setSelectedCategory(null);
+          setIsBookmarksView(false);
+        }
+      }
+      else if (state.view === 'sub') {
+        const dept = DEPARTMENTS.find(d => d.id === state.deptId);
+        const sub = dept?.subjects.find(s => s.id === state.subId);
+        if (dept && sub) {
+          setSelectedDept(dept);
+          setSelectedSemester(state.semId);
+          setSelectedSubject(sub);
+          setSelectedCategory(null);
+          if (state.tab) setSubjectTab(state.tab);
+          setIsBookmarksView(false);
+        }
+      }
+      // Note: Overlays (Video/PDF/Modals) rely on the state *beneath* them being restored 
+      // via the logic above if we popped from an overlay state to a view state.
+      // If we popped *into* an overlay state (forward), we'd need more logic, 
+      // but standard browser 'Back' flow is handled by resetting overlays.
+      
+      // Special case: Restore overlays if the popped state *is* an overlay state
+      if (state.view === 'video' || state.view === 'pdf' || state.modal) {
+          // This allows "Forward" navigation to restore the overlay
+          // For simplicty in this version, we assume popping back closes overlays.
+          // To support Forward, we'd re-open based on state params.
+          if (state.modal === 'contact') setIsContactModalOpen(true);
+          if (state.modal === 'scholarship') setIsScholarshipModalOpen(true);
+          if (state.modal === 'sync') setIsSyncModalOpen(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Helper to push history
+  const pushHistory = (state: any) => {
+    window.history.pushState(state, '');
+  };
+
   useEffect(() => {
     const savedProgress = localStorage.getItem('pollytechnic_progress');
     if (savedProgress) {
@@ -139,16 +232,14 @@ function App() {
     const isCurrentlyBookmarked = isBookmarked(video.id);
 
     if (isCurrentlyBookmarked) {
-        // We can remove it without department context
         toggleBookmark({
             id: video.id,
             type: 'video',
             title: video.title,
-            subtitle: video.instructor, // Keeps original instructor just in case
+            subtitle: video.instructor,
             data: video,
         });
     } else {
-        // Adding requires department
         if (!selectedDept) return;
         toggleBookmark({
             id: video.id,
@@ -198,17 +289,15 @@ function App() {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  // Helper to generate dynamic progress bar style
   const getProgressStyle = (progress: number) => {
-      const activeColor = progress === 100 ? '#10b981' : '#0ea5e9'; // Emerald or Sky
-      const trackColor = isDarkMode ? '#262626' : '#e2e8f0'; // Dark Neutral or Slate 200
+      const activeColor = progress === 100 ? '#10b981' : '#0ea5e9'; 
+      const trackColor = isDarkMode ? '#262626' : '#e2e8f0'; 
       
       return {
           background: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${progress}%, ${trackColor} ${progress}%, ${trackColor} 100%)`
       };
   };
 
-  // Search Logic (Improved Ranking)
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     if (!query.trim()) {
@@ -229,7 +318,6 @@ function App() {
     };
 
     DEPARTMENTS.forEach(dept => {
-      // 1. Search Departments
       const deptNameScore = getScore(dept.name, lowerQuery, 10);
       const deptDescScore = getScore(dept.description, lowerQuery, 5);
       
@@ -241,13 +329,11 @@ function App() {
         });
       }
 
-      // 2. Search Subjects (Weighted by Dept and Sem matches too)
       dept.subjects.forEach(sub => {
         let score = 0;
-        const subTitleScore = getScore(sub.title, lowerQuery, 30); // Higher weight for subject title
+        const subTitleScore = getScore(sub.title, lowerQuery, 30);
         const subDescScore = getScore(sub.description, lowerQuery, 8);
         
-        // Contextual boost: if query mentions "computer" or "sem 1", boost relevant subjects
         const deptContextScore = getScore(dept.name, lowerQuery, 5);
         const semContextScore = getScore(sub.semester, lowerQuery, 15);
 
@@ -261,7 +347,6 @@ function App() {
                 score
             });
         } else if (deptContextScore > 0 && semContextScore > 0) {
-            // If user types "Computer Semester 1", list subjects even if title doesn't match
              score = deptContextScore + semContextScore;
              results.push({ 
                 type: 'subject', 
@@ -273,7 +358,6 @@ function App() {
         }
       });
 
-      // 3. Search Videos
       dept.videos.forEach(vid => {
         const vidScore = getScore(vid.title, lowerQuery, 15);
         if (vidScore > 0) {
@@ -302,6 +386,9 @@ function App() {
     } else if (result.type === 'subject') {
       const subject = result.item as Subject;
       const dept = result.dept!;
+      // Push state to jump directly to subject
+      pushHistory({ view: 'sub', deptId: dept.id, semId: subject.semester, subId: subject.id });
+      
       setSelectedDept(dept);
       setSelectedSemester(subject.semester);
       setSelectedSubject(subject);
@@ -311,21 +398,28 @@ function App() {
       const video = result.item as VideoLecture;
       const dept = result.dept!;
       const relatedSubject = dept.subjects.find(s => s.id === video.subjectId);
+      
+      // Setup state for video playback
+      if (relatedSubject) {
+          pushHistory({ view: 'sub', deptId: dept.id, semId: video.semester, subId: relatedSubject.id });
+          setSelectedSubject(relatedSubject);
+          setSubjectTab('videos');
+      } else {
+          pushHistory({ view: 'sem', deptId: dept.id, semId: video.semester });
+          setSelectedSubject(null);
+      }
       setSelectedDept(dept);
       setSelectedSemester(video.semester);
-      if (relatedSubject) {
-        setSelectedSubject(relatedSubject);
-        setSubjectTab('videos');
-      } else {
-        setSelectedSubject(null);
-      }
       setSelectedCategory(null);
-      setPlayingVideo(video);
+      
+      // Open video immediately
+      setTimeout(() => handlePlayVideo(video), 50);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeptSelect = (dept: Department) => {
+    pushHistory({ view: 'dept', deptId: dept.id });
     setSelectedDept(dept);
     setSelectedSemester(null);
     setSelectedSubject(null);
@@ -335,6 +429,8 @@ function App() {
   };
 
   const handleSemesterSelect = (sem: Semester) => {
+    if (!selectedDept) return;
+    pushHistory({ view: 'sem', deptId: selectedDept.id, semId: sem });
     setSelectedSemester(sem);
     setSelectedSubject(null);
     setSelectedCategory(null);
@@ -342,6 +438,8 @@ function App() {
   };
 
   const handleSubjectSelect = (subject: Subject) => {
+    if (!selectedDept || !selectedSemester) return;
+    pushHistory({ view: 'sub', deptId: selectedDept.id, semId: selectedSemester, subId: subject.id });
     setSelectedSubject(subject);
     setSelectedCategory(null);
     setSubjectTab('materials');
@@ -353,11 +451,13 @@ function App() {
       window.open(category.url, '_blank');
       return;
     }
+    // Categories act as local filters in this UI, but we could push state if we wanted
     setSelectedCategory(category);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleHomeClick = () => {
+    pushHistory({ view: 'home' });
     setSelectedDept(null);
     setSelectedSemester(null);
     setSelectedSubject(null);
@@ -367,6 +467,7 @@ function App() {
   };
   
   const handleBookmarksClick = () => {
+      pushHistory({ view: 'bookmarks' });
       setIsBookmarksView(true);
       setSelectedDept(null);
       setSelectedSemester(null);
@@ -374,36 +475,33 @@ function App() {
       setSelectedCategory(null);
   }
 
-  const goBackToSemesters = () => {
-    setSelectedSemester(null);
-    setSelectedSubject(null);
-    setSelectedCategory(null);
-  };
-
-  const goBackToSubjects = () => {
-    setSelectedSubject(null);
-    setSelectedCategory(null);
-  };
-
-  const goBackToCategories = () => {
-    setSelectedCategory(null);
-  };
+  // Navigation Back Button Handlers (Use history)
+  const goBackToSemesters = () => window.history.back();
+  const goBackToSubjects = () => window.history.back();
+  const goBackToCategories = () => setSelectedCategory(null); // Local UI state
 
   const handleViewResource = (resource: Resource) => {
+    pushHistory({ view: 'pdf', resourceId: resource.id });
     setViewingResource(resource);
   };
 
-  const handleCloseViewer = () => {
-    setViewingResource(null);
-  };
+  // Close handlers using history back if appropriate, otherwise direct state
+  const handleCloseViewer = () => window.history.back();
 
   const handlePlayVideo = (video: VideoLecture) => {
+    pushHistory({ view: 'video', videoId: video.id });
     setPlayingVideo(video);
   };
 
-  const handleCloseVideo = () => {
-    setPlayingVideo(null);
+  const handleCloseVideo = () => window.history.back();
+
+  // Modals with History Support
+  const openModal = (modalName: string, setter: (val: boolean) => void) => {
+      pushHistory({ modal: modalName });
+      setter(true);
   };
+  
+  const closeModal = () => window.history.back();
 
   const getPrerequisiteTitles = (prereqIds: string[] | undefined) => {
     if (!prereqIds || prereqIds.length === 0) return null;
@@ -439,9 +537,9 @@ function App() {
         isDarkMode={isDarkMode} 
         toggleTheme={toggleTheme}
         onSearch={handleSearch}
-        onSyncClick={() => setIsSyncModalOpen(true)}
+        onSyncClick={() => openModal('sync', setIsSyncModalOpen)}
         onBookmarksClick={handleBookmarksClick}
-        onScholarshipsClick={() => setIsScholarshipModalOpen(true)}
+        onScholarshipsClick={() => openModal('scholarship', setIsScholarshipModalOpen)}
       />
 
       {searchQuery && (
@@ -464,14 +562,14 @@ function App() {
         <DriveFolderModal
             url={selectedSubject.driveLink}
             title={`${selectedSubject.title} - Drive Folder`}
-            onClose={() => setIsDriveModalOpen(false)}
+            onClose={closeModal}
         />
       )}
       
       {isSyncModalOpen && (
         <SyncModal 
             isOpen={isSyncModalOpen} 
-            onClose={() => setIsSyncModalOpen(false)}
+            onClose={closeModal}
             progressData={progressData}
             onImport={handleImportProgress}
         />
@@ -479,13 +577,13 @@ function App() {
 
       {isScholarshipModalOpen && (
         <ScholarshipModal 
-            onClose={() => setIsScholarshipModalOpen(false)}
+            onClose={closeModal}
         />
       )}
 
       {isContactModalOpen && (
         <ContactModal 
-            onClose={() => setIsContactModalOpen(false)}
+            onClose={closeModal}
         />
       )}
 
@@ -530,6 +628,9 @@ function App() {
                                 onClick={() => {
                                     if (item.type === 'subject') {
                                         const dept = DEPARTMENTS.find(d => d.id === item.deptId) || DEPARTMENTS[0];
+                                        // Push state before navigating
+                                        pushHistory({ view: 'sub', deptId: dept.id, semId: (item.data as Subject).semester, subId: item.id });
+                                        
                                         setSelectedDept(dept);
                                         const sub = item.data as Subject;
                                         setSelectedSemester(sub.semester);
@@ -881,7 +982,7 @@ function App() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                            {selectedSubject.driveLink && (
                               <div
-                                onClick={() => setIsDriveModalOpen(true)}
+                                onClick={() => openModal('drive', setIsDriveModalOpen)}
                                 className="glass-button p-6 rounded-3xl flex flex-col h-full text-left group hover:border-sky-500 hover:shadow-sky-500/20"
                               >
                                  <div className="flex items-center justify-between mb-5">
@@ -1001,7 +1102,7 @@ function App() {
             
             <div className="flex items-center gap-4">
                 <button 
-                    onClick={() => setIsContactModalOpen(true)}
+                    onClick={() => openModal('contact', setIsContactModalOpen)}
                     className="flex items-center space-x-2 text-sm font-bold text-slate-500 dark:text-neutral-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
                 >
                     <MessageSquare className="w-4 h-4" />
