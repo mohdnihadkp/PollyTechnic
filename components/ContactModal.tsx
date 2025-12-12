@@ -26,7 +26,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
       >
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors z-50 cursor-pointer"
+          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors z-[100] cursor-pointer bg-white/10 backdrop-blur-sm shadow-sm border border-black/5 dark:border-white/10"
         >
           <X className="w-6 h-6" />
         </button>
